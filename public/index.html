@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kahe - Campus App</title>
+<link rel="stylesheet" href="/shared/style.css">
+</head>
+<body>
+  <div class="topbar">
+    <span class="brand">Kahe</span>
+    <div class="nav">
+      <span id="userName"></span>
+      <a href="#" id="logoutLink">Logout</a>
+    </div>
+  </div>
+  <div class="container">
+    <h1>Welcome to Kahe</h1>
+    <p class="muted">Your campus, one app. Pick a feature below.</p>
+
+    <div class="dashboard-grid">
+      <a class="dashboard-tile" href="/canteen/menu.html">
+        <div class="icon">🍽️</div>
+        <div class="label">Canteen Pre-order</div>
+        <div class="muted">Order &amp; skip the queue</div>
+      </a>
+      <a class="dashboard-tile" href="/announcements/index.html">
+        <div class="icon">📢</div>
+        <div class="label">Announcements</div>
+      </a>
+      <a class="dashboard-tile" href="/bus/index.html">
+        <div class="icon">🚌</div>
+        <div class="label">Bus Tracking</div>
+      </a>
+      <a class="dashboard-tile" href="/student/index.html">
+        <div class="icon">🎓</div>
+        <div class="label">Student Status</div>
+      </a>
+    </div>
+
+    <div class="card" id="staffCard" style="display:none; margin-top:16px;">
+      <h2>Staff Tools</h2>
+      <a class="btn" href="/canteen/scanner.html">Open Pickup Scanner</a>
+    </div>
+  </div>
+
+  <script src="/shared/auth.js"></script>
+  <script>
+    Kahe.requireLogin();
+    const user = Kahe.getUser();
+    document.getElementById('userName').textContent = user ? `${user.name} (${user.role})` : '';
+    if (user && (user.role === 'staff' || user.role === 'admin')) {
+      document.getElementById('staffCard').style.display = 'block';
+    }
+    document.getElementById('logoutLink').addEventListener('click', (e) => {
+      e.preventDefault();
+      Kahe.logout();
+    });
+  </script>
+</body>
+</html>

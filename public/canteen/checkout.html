@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Checkout - Kahe</title>
+<link rel="stylesheet" href="/shared/style.css">
+</head>
+<body>
+  <div class="topbar">
+    <a href="/index.html">&larr; Kahe</a>
+    <span>Checkout</span>
+  </div>
+  <div class="container">
+    <div class="card" id="payCard">
+      <h1>Order #<span id="orderId"></span></h1>
+      <p>Total: <strong id="orderTotal"></strong></p>
+      <p class="muted">This is a mock/sandbox payment for demo purposes.</p>
+      <div id="payError" class="error"></div>
+      <button class="btn" id="payBtn" style="width:100%">Pay Now (Mock)</button>
+    </div>
+
+    <div class="card qr-box" id="qrCard" style="display:none;">
+      <h2>Order paid — here's your pickup code</h2>
+      <img id="qrImg" alt="Pickup QR code">
+      <p>Status: <span class="badge paid" id="statusBadge">paid</span></p>
+      <p class="muted" id="expiryNote"></p>
+      <p class="muted">Show this code at the canteen pickup point. It expires and can only be used once.</p>
+    </div>
+  </div>
+
+  <script src="/shared/auth.js"></script>
+  <script>
+    Kahe.requireLogin();
+    const params = new URLSearchParams(window.location.search);
+    const orderId = params.get('orderId');
+    document.getElementById('orderId').textContent = orderId;
+
+    let pollTimer;
+
+    async function loadOrder() {
+      const { order } = await Kahe.api(`/api/canteen/orders/${orderId}`);
+      document.getElementById('orderTotal').textContent = `₹${order.total}`;
+
+      if (order.status === 'paid') {
+        showQr();
+      }
+      if (order.status === 'picked_up') {
+        document.getElementById('statusBadge').textContent = 'picked_up';
+        document.getElementById('statusBadge').className = 'badge picked_up';
+        document.getElementById('expiryNote').textContent = 'Picked up. Enjoy your meal!';
+        clearInterval(pollTimer);
+      }
+    }
+
+    async function showQr() {
+      document.getElementById('payCard').style.display = 'none';
+      document.getElementById('qrCard').style.display = 'block';
+      const { dataUrl, expiresAt } = await Kahe.api(`/api/canteen/orders/${orderId}/qr`);
+      document.getElementById('qrImg').src = dataUrl;
+      const mins = Math.max(0, Math.round((new Date(expiresAt) - new Date()) / 60000));
+      document.getElementById('expiryNote').textContent = `Expires in about ${mins} min if not picked up.`;
+
+      // Poll every few seconds so the page updates to "picked_up" once staff scans it.
+      pollTimer = setInterval(loadOrder, 4000);
+    }
+
+    document.getElementById('payBtn').addEventListener('click', async () => {
+      const errorEl = document.getElementById('payError');
+      errorEl.textContent = '';
+      try {
+        await Kahe.api(`/api/canteen/orders/${orderId}/pay`, { method: 'POST' });
+        showQr();
+      } catch (err) {
+        errorEl.textContent = err.message;
+      }
+    });
+
+    loadOrder();
+  </script>
+</body>
+</html>

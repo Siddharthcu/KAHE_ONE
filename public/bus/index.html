@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bus Tracking - Kahe</title>
+<link rel="stylesheet" href="/shared/style.css">
+<style>
+  .bus-select-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+  .bus-chip {
+    border: 1px solid var(--border);
+    background: white;
+    border-radius: 999px;
+    padding: 8px 16px;
+    font-weight: 700;
+    font-size: 0.9rem;
+    cursor: pointer;
+    color: var(--text);
+  }
+  .bus-chip.active {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+  }
+
+  .bus-card { padding: 24px; }
+  .bus-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 4px;
+  }
+  .bus-number {
+    background: var(--primary);
+    color: white;
+    font-weight: 700;
+    font-size: 0.9rem;
+    padding: 3px 12px;
+    border-radius: 6px;
+    margin-right: 8px;
+  }
+  .route-name { font-weight: 600; }
+  .eta-text { color: var(--primary); font-weight: 700; font-size: 1rem; }
+  .status-text { color: var(--muted); font-size: 0.85rem; margin-bottom: 12px; }
+
+  /* --- vertical stop line, like a train-tracking timeline --- */
+  .route-track {
+    position: relative;
+    margin: 20px auto;
+    padding-left: 40px;
+    min-height: 260px;
+  }
+  .track-line {
+    position: absolute;
+    top: 10px;
+    bottom: 10px;
+    left: 15px;
+    width: 4px;
+    background: var(--border);
+    border-radius: 2px;
+  }
+  .track-line-filled {
+    position: absolute;
+    top: 10px;
+    left: 15px;
+    width: 4px;
+    background: var(--primary);
+    border-radius: 2px;
+    transition: height 1s linear;
+  }
+  .stop-row {
+    position: relative;
+    display: flex;
+    align-items: center;
+    min-height: 52px;
+  }
+  .stop-dot {
+    position: absolute;
+    left: 8px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: white;
+    border: 3px solid var(--border);
+    z-index: 2;
+  }
+  .stop-dot.passed {
+    border-color: var(--primary);
+    background: var(--primary);
+  }
+  .stop-dot.final { border-color: var(--success); }
+  .stop-dot.final.passed { background: var(--success); border-color: var(--success); }
+  .stop-label {
+    margin-left: 24px;
+    font-size: 0.9rem;
+    color: var(--text);
+  }
+  .bus-marker {
+    position: absolute;
+    left: -4px;
+    font-size: 1.5rem;
+    transition: top 1s linear;
+    z-index: 3;
+  }
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <a href="/index.html">&larr; Kahe</a>
+    <span>Bus Tracking</span>
+  </div>
+  <div class="container">
+    <h1>Bus Tracking</h1>
+    <p class="muted">Pick a bus to see its live position. Prototype uses a simulated feed — swap for real GPS later.</p>
+
+    <div class="bus-select-row" id="busSelectRow"></div>
+    <div id="detail">Loading...</div>
+  </div>
+
+  <script src="/shared/auth.js"></script>
+  <script>
+    Kahe.requireLogin();
+
+    let buses = [];
+    let selectedId = null;
+
+    function renderSelector() {
+      const row = document.getElementById('busSelectRow');
+      row.innerHTML = buses.map(b => `
+        <button class="bus-chip ${b.id === selectedId ? 'active' : ''}" data-id="${b.id}">
+          ${b.busNumber}
+        </button>
+      `).join('');
+      row.querySelectorAll('.bus-chip').forEach(btn => {
+        btn.addEventListener('click', () => {
+          selectedId = Number(btn.dataset.id);
+          renderSelector();
+          renderDetail();
+        });
+      });
+    }
+
+    function renderDetail() {
+      const bus = buses.find(b => b.id === selectedId);
+      const el = document.getElementById('detail');
+      if (!bus) { el.innerHTML = ''; return; }
+
+      const maxIndex = bus.stops.length - 1;
+      const pct = (bus.position / maxIndex) * 100;
+
+      const rowHeight = 52; // must match .stop-row min-height
+      const markerTop = (bus.position / maxIndex) * (rowHeight * maxIndex) + rowHeight / 2 - 12;
+
+      const stopRows = bus.stops.map((name, idx) => {
+        const passed = idx <= bus.position + 0.001;
+        const isFinal = idx === maxIndex;
+        return `
+          <div class="stop-row">
+            <div class="stop-dot ${passed ? 'passed' : ''} ${isFinal ? 'final' : ''}"></div>
+            <div class="stop-label">${name}</div>
+          </div>
+        `;
+      }).join('');
+
+      el.innerHTML = `
+        <div class="card bus-card">
+          <div class="bus-header">
+            <div><span class="bus-number">${bus.busNumber}</span><span class="route-name">${bus.routeName}</span></div>
+            <div class="eta-text">${bus.etaMinutes === 0 ? 'Arrived' : bus.etaMinutes + ' min'}</div>
+          </div>
+          <div class="status-text">${bus.status}</div>
+          <div class="route-track">
+            <div class="track-line"></div>
+            <div class="track-line-filled" style="height:${pct}%"></div>
+            <div class="bus-marker" style="top:${markerTop}px">🚌</div>
+            ${stopRows}
+          </div>
+        </div>
+      `;
+    }
+
+    async function load() {
+      try {
+        const data = await Kahe.api('/api/bus');
+        buses = data.buses;
+        if (selectedId === null && buses.length > 0) {
+          selectedId = buses[0].id;
+        }
+        renderSelector();
+        renderDetail();
+      } catch (err) {
+        document.getElementById('detail').innerHTML = `<span class="error">${err.message}</span>`;
+      }
+    }
+
+    load();
+    setInterval(load, 4000);
+  </script>
+</body>
+</html>

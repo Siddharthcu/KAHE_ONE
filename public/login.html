@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login - Kahe</title>
+<link rel="stylesheet" href="/shared/style.css">
+</head>
+<body>
+  <div class="topbar">
+    <span class="brand">Kahe</span>
+  </div>
+  <div class="container">
+    <div class="card">
+      <h1>Login</h1>
+      <input id="email" type="email" placeholder="you@college.edu">
+      <input id="password" type="password" placeholder="Password">
+      <div id="error" class="error"></div>
+      <button class="btn" id="loginBtn" style="width:100%">Login</button>
+      <p class="muted" style="margin-top:14px">
+        Demo accounts (password: <code>password123</code>):<br>
+        student@college.edu (student)<br>
+        staff@college.edu (staff / scanner access)<br>
+        admin@college.edu (admin)
+      </p>
+    </div>
+  </div>
+
+  <script src="/shared/auth.js"></script>
+  <script>
+    document.getElementById('loginBtn').addEventListener('click', async () => {
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      const errorEl = document.getElementById('error');
+      errorEl.textContent = '';
+
+      try {
+        const data = await Kahe.api('/api/auth/login', {
+          method: 'POST',
+          body: JSON.stringify({ email, password })
+        });
+        Kahe.setToken(data.token);
+        Kahe.setUser(data.user);
+        window.location.href = '/index.html';
+      } catch (err) {
+        errorEl.textContent = err.message;
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Canteen Menu - Kahe</title>
+<link rel="stylesheet" href="/shared/style.css">
+</head>
+<body>
+  <div class="topbar">
+    <a href="/index.html">&larr; Kahe</a>
+    <span>Canteen</span>
+  </div>
+  <div class="container">
+    <h1>Canteen Menu</h1>
+    <p class="muted">Order now, pick up with a QR code — no queue.</p>
+
+    <div class="card">
+      <h2>Menu</h2>
+      <div id="menuList">Loading...</div>
+    </div>
+
+    <div class="card">
+      <h2>Your Cart</h2>
+      <div id="cartList" class="muted">Cart is empty</div>
+      <div style="display:flex; justify-content:space-between; margin-top:12px; font-weight:600;">
+        <span>Total</span>
+        <span id="cartTotal">₹0</span>
+      </div>
+      <div id="orderError" class="error"></div>
+      <button class="btn" id="placeOrderBtn" style="width:100%; margin-top:12px;" disabled>
+        Place Order
+      </button>
+    </div>
+  </div>
+
+  <script src="/shared/auth.js"></script>
+  <script>
+    Kahe.requireLogin();
+    let menuItems = [];
+    const cart = {}; // menuItemId -> qty
+
+    function renderMenu() {
+      const el = document.getElementById('menuList');
+      el.innerHTML = '';
+      menuItems.forEach(item => {
+        const qty = cart[item.id] || 0;
+        const row = document.createElement('div');
+        row.className = 'menu-item';
+        row.innerHTML = `
+          <div>
+            <div>${item.name}</div>
+            <div class="muted">₹${item.price}</div>
+          </div>
+          <div class="qty-controls">
+            <button data-action="dec" data-id="${item.id}">-</button>
+            <span>${qty}</span>
+            <button data-action="inc" data-id="${item.id}">+</button>
+          </div>
+        `;
+        el.appendChild(row);
+      });
+    }
+
+    function renderCart() {
+      const el = document.getElementById('cartList');
+      const ids = Object.keys(cart).filter(id => cart[id] > 0);
+      if (ids.length === 0) {
+        el.innerHTML = '<span class="muted">Cart is empty</span>';
+        document.getElementById('placeOrderBtn').disabled = true;
+        document.getElementById('cartTotal').textContent = '₹0';
+        return;
+      }
+      let total = 0;
+      el.innerHTML = '';
+      ids.forEach(id => {
+        const item = menuItems.find(m => m.id == id);
+        const qty = cart[id];
+        total += item.price * qty;
+        const row = document.createElement('div');
+        row.className = 'cart-item';
+        row.innerHTML = `<span>${item.name} x${qty}</span><span>₹${item.price * qty}</span>`;
+        el.appendChild(row);
+      });
+      document.getElementById('cartTotal').textContent = `₹${total}`;
+      document.getElementById('placeOrderBtn').disabled = false;
+    }
+
+    document.getElementById('menuList').addEventListener('click', (e) => {
+      const btn = e.target.closest('button');
+      if (!btn) return;
+      const id = btn.dataset.id;
+      const action = btn.dataset.action;
+      const current = cart[id] || 0;
+      cart[id] = action === 'inc' ? current + 1 : Math.max(0, current - 1);
+      renderMenu();
+      renderCart();
+    });
+
+    document.getElementById('placeOrderBtn').addEventListener('click', async () => {
+      const errorEl = document.getElementById('orderError');
+      errorEl.textContent = '';
+      const items = Object.keys(cart)
+        .filter(id => cart[id] > 0)
+        .map(id => ({ menuItemId: Number(id), qty: cart[id] }));
+
+      try {
+        const data = await Kahe.api('/api/canteen/orders', {
+          method: 'POST',
+          body: JSON.stringify({ items })
+        });
+        window.location.href = `/canteen/checkout.html?orderId=${data.orderId}`;
+      } catch (err) {
+        errorEl.textContent = err.message;
+      }
+    });
+
+    (async function init() {
+      try {
+        const data = await Kahe.api('/api/canteen/menu');
+        menuItems = data.items;
+        renderMenu();
+        renderCart();
+      } catch (err) {
+        document.getElementById('menuList').innerHTML = `<span class="error">${err.message}</span>`;
+      }
+    })();
+  </script>
+</body>
+</html>

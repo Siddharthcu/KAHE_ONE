@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Student Status - Kahe</title>
+<link rel="stylesheet" href="/shared/style.css">
+</head>
+<body>
+  <div class="topbar">
+    <a href="/index.html">&larr; Kahe</a>
+    <span>Student Status</span>
+  </div>
+  <div class="container">
+    <h1>Student Status</h1>
+    <div class="card" id="statusCard">Loading...</div>
+  </div>
+
+  <script src="/shared/auth.js"></script>
+  <script>
+    Kahe.requireLogin();
+    (async function init() {
+      try {
+        const { status } = await Kahe.api('/api/student/status');
+        document.getElementById('statusCard').innerHTML = `
+          <h2>Attendance</h2>
+          <p>${status.attendance_pct}%</p>
+          <h2>Fee Status</h2>
+          <p>${status.fee_status}</p>
+          <h2>Library Books Due</h2>
+          <p>${status.library_books_due}</p>
+        `;
+      } catch (err) {
+        document.getElementById('statusCard').innerHTML = `<span class="error">${err.message}</span>`;
+      }
+    })();
+  </script>
+</body>
+</html>

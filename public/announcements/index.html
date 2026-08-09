@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Announcements - Kahe</title>
+<link rel="stylesheet" href="/shared/style.css">
+</head>
+<body>
+  <div class="topbar">
+    <a href="/index.html">&larr; Kahe</a>
+    <span>Announcements</span>
+  </div>
+  <div class="container">
+    <h1>Announcements</h1>
+    <div id="list">Loading...</div>
+  </div>
+
+  <script src="/shared/auth.js"></script>
+  <script>
+    Kahe.requireLogin();
+    (async function init() {
+      try {
+        const { items } = await Kahe.api('/api/announcements');
+        const el = document.getElementById('list');
+        if (items.length === 0) {
+          el.innerHTML = '<p class="muted">No announcements yet.</p>';
+          return;
+        }
+        el.innerHTML = items.map(a => `
+          <div class="card">
+            <h2>${a.title}</h2>
+            <p>${a.body}</p>
+            <p class="muted">${a.posted_by} — ${a.created_at}</p>
+          </div>
+        `).join('');
+      } catch (err) {
+        document.getElementById('list').innerHTML = `<span class="error">${err.message}</span>`;
+      }
+    })();
+  </script>
+</body>
+</html>

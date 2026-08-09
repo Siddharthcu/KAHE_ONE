@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pickup Scanner - Kahe</title>
+<link rel="stylesheet" href="/shared/style.css">
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+</head>
+<body>
+  <div class="topbar">
+    <a href="/index.html">&larr; Kahe</a>
+    <span>Staff Pickup Scanner</span>
+  </div>
+  <div class="container">
+    <div class="card">
+      <h1>Scan Pickup QR</h1>
+      <div id="reader" style="width:100%; max-width:400px; margin:0 auto;"></div>
+      <p class="muted" id="scanHint">Point the camera at the student's QR code.</p>
+    </div>
+
+    <div class="card" id="resultCard" style="display:none;">
+      <h2 id="resultTitle"></h2>
+      <div id="resultBody"></div>
+      <button class="btn" id="scanAgainBtn" style="margin-top:12px;">Scan Next</button>
+    </div>
+
+    <div class="card">
+      <h2>Manual entry (fallback)</h2>
+      <p class="muted">If the camera isn't available, paste the token manually.</p>
+      <input id="manualToken" placeholder="Paste QR token here">
+      <button class="btn secondary" id="manualVerifyBtn">Verify</button>
+    </div>
+  </div>
+
+  <script src="/shared/auth.js"></script>
+  <script>
+    Kahe.requireLogin();
+    const user = Kahe.getUser();
+    if (!user || (user.role !== 'staff' && user.role !== 'admin')) {
+      document.body.innerHTML = '<div class="container"><div class="card error">Staff access only.</div></div>';
+      throw new Error('unauthorized');
+    }
+
+    let scanner;
+    let isProcessing = false;
+
+    async function verifyToken(token) {
+      if (isProcessing) return;
+      isProcessing = true;
+      const resultCard = document.getElementById('resultCard');
+      const title = document.getElementById('resultTitle');
+      const body = document.getElementById('resultBody');
+      resultCard.style.display = 'block';
+
+      try {
+        const data = await Kahe.api('/api/canteen/verify', {
+          method: 'POST',
+          body: JSON.stringify({ token })
+        });
+        title.textContent = '✅ Order Verified';
+        title.style.color = '#16a34a';
+        const itemsHtml = data.items.map(i => `<div>${i.name} x${i.qty}</div>`).join('');
+        body.innerHTML = `
+          <p><strong>${data.student.name}</strong> (${data.student.email})</p>
+          ${itemsHtml}
+          <p style="margin-top:8px;">Total: ₹${data.total}</p>
+        `;
+      } catch (err) {
+        title.textContent = '❌ Verification Failed';
+        title.style.color = '#dc2626';
+        body.innerHTML = `<p class="error">${err.message}</p>`;
+      } finally {
+        if (scanner) {
+          scanner.pause(true);
+        }
+      }
+    }
+
+    function startScanner() {
+      isProcessing = false;
+      document.getElementById('resultCard').style.display = 'none';
+      if (scanner) {
+        scanner.resume();
+        return;
+      }
+      scanner = new Html5Qrcode('reader');
+      scanner
+        .start(
+          { facingMode: 'environment' },
+          { fps: 10, qrbox: 220 },
+          (decodedText) => {
+            verifyToken(decodedText);
+          },
+          () => {} // ignore per-frame scan errors
+        )
+        .catch(() => {
+          document.getElementById('scanHint').textContent =
+            'Camera unavailable — use manual entry below.';
+        });
+    }
+
+    document.getElementById('scanAgainBtn').addEventListener('click', startScanner);
+    document.getElementById('manualVerifyBtn').addEventListener('click', () => {
+      const token = document.getElementById('manualToken').value.trim();
+      if (token) verifyToken(token);
+    });
+
+    startScanner();
+  </script>
+</body>
+</html>
