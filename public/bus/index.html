@@ -6,12 +6,9 @@
 <title>Bus Tracking - Kahe</title>
 <link rel="stylesheet" href="/shared/style.css">
 <style>
-  body.bus-page {
-    background: #14151c;
-    color: #f2f3f7;
-  }
+  body.bus-page { background: #f4f8fd; color: #172033; }
   .bus-topbar {
-    background: #1f2130;
+    background: linear-gradient(115deg, #123a77, #2563eb 58%, #1d78ad);
     padding: 14px 16px;
     display: flex;
     align-items: center;
@@ -19,7 +16,7 @@
   }
   .bus-topbar a { color: #f2f3f7; text-decoration: none; font-size: 1.2rem; }
   .bus-topbar .title { font-weight: 700; font-size: 1.05rem; }
-  .bus-topbar .subtitle { font-size: 0.75rem; color: #9aa0b4; }
+  .bus-topbar .subtitle { font-size: 0.75rem; color: #dbeafe; }
 
   .bus-select-row {
     display: flex;
@@ -28,9 +25,9 @@
     overflow-x: auto;
   }
   .bus-chip {
-    border: 1px solid #33354a;
-    background: #1f2130;
-    color: #f2f3f7;
+    border: 1px solid #dce5f1;
+    background: #ffffff;
+    color: #38506f;
     border-radius: 999px;
     padding: 8px 18px;
     font-weight: 700;
@@ -39,8 +36,9 @@
     white-space: nowrap;
   }
   .bus-chip.active {
-    background: #4f46e5;
-    border-color: #4f46e5;
+    background: #2563eb;
+    border-color: #2563eb;
+    color: white;
   }
 
   .timeline-wrap { padding: 4px 16px 100px 16px; }
@@ -58,7 +56,7 @@
     top: 0;
     bottom: 0;
     width: 3px;
-    background: #33354a;
+    background: #dbe5f1;
   }
   .stop-row:first-child .track-line { top: 10px; }
   .stop-row:last-child .track-line { bottom: calc(100% - 10px); }
@@ -70,11 +68,11 @@
     width: 15px;
     height: 15px;
     border-radius: 50%;
-    background: #14151c;
-    border: 3px solid #33354a;
+    background: #f4f8fd;
+    border: 3px solid #cbd8e8;
     z-index: 2;
   }
-  .stop-dot.passed { border-color: #4f46e5; background: #4f46e5; }
+  .stop-dot.passed { border-color: #2563eb; background: #2563eb; }
   .stop-dot.final.passed { border-color: #16a34a; background: #16a34a; }
   .stop-dot.current {
     border-color: #f59e0b;
@@ -88,14 +86,14 @@
     justify-content: space-between;
     align-items: flex-start;
     padding-bottom: 18px;
-    border-bottom: 1px solid #24263a;
+    border-bottom: 1px solid #e0e8f2;
   }
   .stop-info { padding-left: 12px; }
   .stop-name { font-weight: 600; font-size: 0.95rem; font-style: italic; }
-  .stop-meta { font-size: 0.78rem; color: #9aa0b4; margin-top: 2px; }
+  .stop-meta { font-size: 0.78rem; color: #71809a; margin-top: 2px; }
 
   .stop-times { text-align: right; padding-left: 8px; }
-  .stop-time-sched { font-weight: 700; font-size: 0.9rem; color: #f2f3f7; }
+  .stop-time-sched { font-weight: 700; font-size: 0.9rem; color: #273c59; }
   .stop-time-live { font-size: 0.85rem; color: #f26b5c; margin-top: 2px; }
 
   .bus-live-badge {
@@ -110,19 +108,20 @@
     bottom: 0;
     left: 0;
     right: 0;
-    background: #1f2130;
+    background: rgba(255,255,255,.96);
     padding: 14px 20px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-top: 1px solid #33354a;
+    border-top: 1px solid #dce5f1;
+    box-shadow: 0 -5px 18px rgba(25, 61, 112, .08);
   }
   .status-footer .loc { color: #f26b5c; font-weight: 700; font-size: 0.95rem; }
-  .status-footer .updated { color: #9aa0b4; font-size: 0.75rem; margin-top: 2px; }
+  .status-footer .updated { color: #71809a; font-size: 0.75rem; margin-top: 2px; }
   .refresh-btn {
-    background: #33354a;
+    background: #e7eff9;
     border: none;
-    color: #f2f3f7;
+    color: #2563eb;
     width: 40px;
     height: 40px;
     border-radius: 50%;
