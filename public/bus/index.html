@@ -6,120 +6,150 @@
 <title>Bus Tracking - Kahe</title>
 <link rel="stylesheet" href="/shared/style.css">
 <style>
+  body.bus-page {
+    background: #14151c;
+    color: #f2f3f7;
+  }
+  .bus-topbar {
+    background: #1f2130;
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .bus-topbar a { color: #f2f3f7; text-decoration: none; font-size: 1.2rem; }
+  .bus-topbar .title { font-weight: 700; font-size: 1.05rem; }
+  .bus-topbar .subtitle { font-size: 0.75rem; color: #9aa0b4; }
+
   .bus-select-row {
     display: flex;
     gap: 8px;
-    margin-bottom: 16px;
-    flex-wrap: wrap;
+    padding: 12px 16px;
+    overflow-x: auto;
   }
   .bus-chip {
-    border: 1px solid var(--border);
-    background: white;
+    border: 1px solid #33354a;
+    background: #1f2130;
+    color: #f2f3f7;
     border-radius: 999px;
-    padding: 8px 16px;
+    padding: 8px 18px;
     font-weight: 700;
     font-size: 0.9rem;
     cursor: pointer;
-    color: var(--text);
+    white-space: nowrap;
   }
   .bus-chip.active {
-    background: var(--primary);
-    color: white;
-    border-color: var(--primary);
+    background: #4f46e5;
+    border-color: #4f46e5;
   }
 
-  .bus-card { padding: 24px; }
-  .bus-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    margin-bottom: 4px;
-  }
-  .bus-number {
-    background: var(--primary);
-    color: white;
-    font-weight: 700;
-    font-size: 0.9rem;
-    padding: 3px 12px;
-    border-radius: 6px;
-    margin-right: 8px;
-  }
-  .route-name { font-weight: 600; }
-  .eta-text { color: var(--primary); font-weight: 700; font-size: 1rem; }
-  .status-text { color: var(--muted); font-size: 0.85rem; margin-bottom: 12px; }
+  .timeline-wrap { padding: 4px 16px 100px 16px; }
 
-  /* --- vertical stop line, like a train-tracking timeline --- */
-  .route-track {
-    position: relative;
-    margin: 20px auto;
-    padding-left: 40px;
-    min-height: 260px;
-  }
-  .track-line {
-    position: absolute;
-    top: 10px;
-    bottom: 10px;
-    left: 15px;
-    width: 4px;
-    background: var(--border);
-    border-radius: 2px;
-  }
-  .track-line-filled {
-    position: absolute;
-    top: 10px;
-    left: 15px;
-    width: 4px;
-    background: var(--primary);
-    border-radius: 2px;
-    transition: height 1s linear;
-  }
   .stop-row {
     position: relative;
     display: flex;
-    align-items: center;
-    min-height: 52px;
+    align-items: flex-start;
+    padding-left: 26px;
+    min-height: 72px;
   }
+  .stop-row .track-line {
+    position: absolute;
+    left: 6px;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: #33354a;
+  }
+  .stop-row:first-child .track-line { top: 10px; }
+  .stop-row:last-child .track-line { bottom: calc(100% - 10px); }
+
   .stop-dot {
     position: absolute;
-    left: 8px;
-    width: 18px;
-    height: 18px;
+    left: 0;
+    top: 6px;
+    width: 15px;
+    height: 15px;
     border-radius: 50%;
-    background: white;
-    border: 3px solid var(--border);
+    background: #14151c;
+    border: 3px solid #33354a;
     z-index: 2;
   }
-  .stop-dot.passed {
-    border-color: var(--primary);
-    background: var(--primary);
+  .stop-dot.passed { border-color: #4f46e5; background: #4f46e5; }
+  .stop-dot.final.passed { border-color: #16a34a; background: #16a34a; }
+  .stop-dot.current {
+    border-color: #f59e0b;
+    background: #f59e0b;
+    box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.25);
   }
-  .stop-dot.final { border-color: var(--success); }
-  .stop-dot.final.passed { background: var(--success); border-color: var(--success); }
-  .stop-label {
-    margin-left: 24px;
-    font-size: 0.9rem;
-    color: var(--text);
+
+  .stop-main {
+    flex: 1;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding-bottom: 18px;
+    border-bottom: 1px solid #24263a;
   }
-  .bus-marker {
+  .stop-info { padding-left: 12px; }
+  .stop-name { font-weight: 600; font-size: 0.95rem; font-style: italic; }
+  .stop-meta { font-size: 0.78rem; color: #9aa0b4; margin-top: 2px; }
+
+  .stop-times { text-align: right; padding-left: 8px; }
+  .stop-time-sched { font-weight: 700; font-size: 0.9rem; color: #f2f3f7; }
+  .stop-time-live { font-size: 0.85rem; color: #f26b5c; margin-top: 2px; }
+
+  .bus-live-badge {
     position: absolute;
-    left: -4px;
-    font-size: 1.5rem;
-    transition: top 1s linear;
+    left: -6px;
+    font-size: 1.1rem;
     z-index: 3;
+  }
+
+  .status-footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: #1f2130;
+    padding: 14px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid #33354a;
+  }
+  .status-footer .loc { color: #f26b5c; font-weight: 700; font-size: 0.95rem; }
+  .status-footer .updated { color: #9aa0b4; font-size: 0.75rem; margin-top: 2px; }
+  .refresh-btn {
+    background: #33354a;
+    border: none;
+    color: #f2f3f7;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    font-size: 1.1rem;
+    cursor: pointer;
   }
 </style>
 </head>
-<body>
-  <div class="topbar">
-    <a href="/index.html">&larr; Kahe</a>
-    <span>Bus Tracking</span>
+<body class="bus-page">
+  <div class="bus-topbar">
+    <a href="/index.html">&larr;</a>
+    <div>
+      <div class="title" id="routeTitle">Bus Tracking</div>
+      <div class="subtitle" id="routeSubtitle">Loading...</div>
+    </div>
   </div>
-  <div class="container">
-    <h1>Bus Tracking</h1>
-    <p class="muted">Pick a bus to see its live position. Prototype uses a simulated feed — swap for real GPS later.</p>
 
-    <div class="bus-select-row" id="busSelectRow"></div>
-    <div id="detail">Loading...</div>
+  <div class="bus-select-row" id="busSelectRow"></div>
+
+  <div class="timeline-wrap" id="timeline"></div>
+
+  <div class="status-footer">
+    <div>
+      <div class="loc" id="footerLoc">—</div>
+      <div class="updated" id="footerUpdated">—</div>
+    </div>
+    <button class="refresh-btn" id="refreshBtn">&#8635;</button>
   </div>
 
   <script src="/shared/auth.js"></script>
@@ -128,6 +158,7 @@
 
     let buses = [];
     let selectedId = null;
+    let lastUpdatedAt = null;
 
     function renderSelector() {
       const row = document.getElementById('busSelectRow');
@@ -147,41 +178,44 @@
 
     function renderDetail() {
       const bus = buses.find(b => b.id === selectedId);
-      const el = document.getElementById('detail');
-      if (!bus) { el.innerHTML = ''; return; }
+      if (!bus) return;
+
+      document.getElementById('routeTitle').textContent = `${bus.busNumber} - ${bus.routeName}`;
+      document.getElementById('routeSubtitle').textContent =
+        bus.delayMinutes > 0 ? `Running ~${bus.delayMinutes} min behind schedule` : 'On schedule';
 
       const maxIndex = bus.stops.length - 1;
-      const pct = (bus.position / maxIndex) * 100;
-
-      const rowHeight = 52; // must match .stop-row min-height
-      const markerTop = (bus.position / maxIndex) * (rowHeight * maxIndex) + rowHeight / 2 - 12;
-
-      const stopRows = bus.stops.map((name, idx) => {
-        const passed = idx <= bus.position + 0.001;
+      const timeline = document.getElementById('timeline');
+      timeline.innerHTML = bus.stops.map((stop, idx) => {
         const isFinal = idx === maxIndex;
+        const isCurrent = idx === bus.currentStopIndex && bus.position < maxIndex;
         return `
           <div class="stop-row">
-            <div class="stop-dot ${passed ? 'passed' : ''} ${isFinal ? 'final' : ''}"></div>
-            <div class="stop-label">${name}</div>
+            <div class="track-line"></div>
+            <div class="stop-dot ${stop.passed ? 'passed' : ''} ${isFinal ? 'final' : ''} ${isCurrent ? 'current' : ''}"></div>
+            ${isCurrent ? '<div class="bus-live-badge">🚌</div>' : ''}
+            <div class="stop-main">
+              <div class="stop-info">
+                <div class="stop-name">${stop.stopName}</div>
+                <div class="stop-meta">${stop.distanceKm} km</div>
+              </div>
+              <div class="stop-times">
+                <div class="stop-time-sched">${stop.scheduledTime}</div>
+                <div class="stop-time-live">${stop.liveTime}</div>
+              </div>
+            </div>
           </div>
         `;
       }).join('');
 
-      el.innerHTML = `
-        <div class="card bus-card">
-          <div class="bus-header">
-            <div><span class="bus-number">${bus.busNumber}</span><span class="route-name">${bus.routeName}</span></div>
-            <div class="eta-text">${bus.etaMinutes === 0 ? 'Arrived' : bus.etaMinutes + ' min'}</div>
-          </div>
-          <div class="status-text">${bus.status}</div>
-          <div class="route-track">
-            <div class="track-line"></div>
-            <div class="track-line-filled" style="height:${pct}%"></div>
-            <div class="bus-marker" style="top:${markerTop}px">🚌</div>
-            ${stopRows}
-          </div>
-        </div>
-      `;
+      document.getElementById('footerLoc').textContent = bus.status;
+    }
+
+    function renderUpdatedAgo() {
+      if (!lastUpdatedAt) return;
+      const secs = Math.round((Date.now() - lastUpdatedAt) / 1000);
+      const label = secs < 5 ? 'just now' : `Updated ${secs}s ago`;
+      document.getElementById('footerUpdated').textContent = label;
     }
 
     async function load() {
@@ -191,15 +225,20 @@
         if (selectedId === null && buses.length > 0) {
           selectedId = buses[0].id;
         }
+        lastUpdatedAt = Date.now();
         renderSelector();
         renderDetail();
+        renderUpdatedAgo();
       } catch (err) {
-        document.getElementById('detail').innerHTML = `<span class="error">${err.message}</span>`;
+        document.getElementById('timeline').innerHTML = `<span class="error">${err.message}</span>`;
       }
     }
 
+    document.getElementById('refreshBtn').addEventListener('click', load);
+
     load();
-    setInterval(load, 4000);
+    setInterval(load, 5000);
+    setInterval(renderUpdatedAgo, 1000);
   </script>
 </body>
 </html>

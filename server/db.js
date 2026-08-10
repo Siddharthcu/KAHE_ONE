@@ -58,7 +58,8 @@ CREATE TABLE IF NOT EXISTS buses (
   bus_number TEXT NOT NULL,
   route_name TEXT NOT NULL,
   current_position REAL NOT NULL DEFAULT 0, -- float index into bus_stops (0 = at first stop)
-  minutes_per_stop REAL NOT NULL DEFAULT 3  -- used to estimate ETA between stops
+  minutes_per_stop REAL NOT NULL DEFAULT 3, -- used to estimate scheduled time between stops
+  delay_minutes REAL NOT NULL DEFAULT 0     -- current delay vs schedule, shown like a live update
 );
 
 CREATE TABLE IF NOT EXISTS bus_stops (
@@ -66,6 +67,7 @@ CREATE TABLE IF NOT EXISTS bus_stops (
   bus_id INTEGER NOT NULL,
   stop_name TEXT NOT NULL,
   stop_order INTEGER NOT NULL, -- 0-indexed, last stop = campus
+  distance_km REAL NOT NULL DEFAULT 0,
   FOREIGN KEY(bus_id) REFERENCES buses(id)
 );
 
@@ -115,28 +117,42 @@ if (userCount === 0) {
   );
 
   const insertBus = db.prepare(
-    'INSERT INTO buses (bus_number, route_name, current_position, minutes_per_stop) VALUES (?, ?, ?, ?)'
+    'INSERT INTO buses (bus_number, route_name, current_position, minutes_per_stop, delay_minutes) VALUES (?, ?, ?, ?, ?)'
   );
   const insertStop = db.prepare(
-    'INSERT INTO bus_stops (bus_id, stop_name, stop_order) VALUES (?, ?, ?)'
+    'INSERT INTO bus_stops (bus_id, stop_name, stop_order, distance_km) VALUES (?, ?, ?, ?)'
   );
 
-  function seedBus(busNumber, routeName, stops, minutesPerStop, startPosition) {
-    const busId = insertBus.run(busNumber, routeName, startPosition, minutesPerStop).lastInsertRowid;
-    stops.forEach((stopName, idx) => insertStop.run(busId, stopName, idx));
+  // stops: array of [name, distanceKm]
+  function seedBus(busNumber, routeName, stops, minutesPerStop, startPosition, delayMinutes) {
+    const busId = insertBus
+      .run(busNumber, routeName, startPosition, minutesPerStop, delayMinutes)
+      .lastInsertRowid;
+    stops.forEach(([stopName, distanceKm], idx) => insertStop.run(busId, stopName, idx, distanceKm));
   }
 
   seedBus('#067', 'Route 1 - City Center', [
-    'City Center', 'Main Market', 'Bus Stand', 'Ring Road', 'College Gate'
-  ], 4, 1.3);
+    ['City Center', 0],
+    ['Main Market', 3],
+    ['Bus Stand', 9],
+    ['Ring Road', 15],
+    ['College Gate', 21]
+  ], 4, 1.3, 6);
 
   seedBus('#124', 'Route 2 - Railway Station', [
-    'Railway Station', 'Old Bus Stand', 'Anna Nagar', 'College Gate'
-  ], 5, 3);
+    ['Railway Station', 0],
+    ['Old Bus Stand', 5],
+    ['Anna Nagar', 12],
+    ['College Gate', 18]
+  ], 5, 3, 9);
 
   seedBus('#052', 'Route 3 - Bus Stand', [
-    'Central Bus Stand', 'Textile Market', 'Kumar Nagar', 'PN Road', 'College Gate'
-  ], 3.5, 0.4);
+    ['Central Bus Stand', 0],
+    ['Textile Market', 4],
+    ['Kumar Nagar', 10],
+    ['PN Road', 16],
+    ['College Gate', 22]
+  ], 3.5, 0.4, 3);
 
   db.prepare(
     'INSERT INTO student_status (user_id, attendance_pct, fee_status, library_books_due) VALUES (1, 87.5, ?, 1)'

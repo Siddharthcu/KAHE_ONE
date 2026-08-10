@@ -1,4 +1,4 @@
-# KAHE ONE
+# Kahe — Campus Super App (Hackathon Build)
 
 A modular campus app. This build focuses on the **Canteen Pre-order + Secure QR Pickup**
 feature end-to-end, with Announcements, Bus Tracking, and Student Status as working
