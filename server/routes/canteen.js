@@ -7,7 +7,7 @@ const { requireAuth, requireRole } = require('../middleware/auth');
 
 const router = express.Router();
 
-const PICKUP_WINDOW_MINUTES = 20;
+const PICKUP_WINDOW_MINUTES = 40;
 
 // ---- Menu ----
 router.get('/menu', requireAuth, (req, res) => {
